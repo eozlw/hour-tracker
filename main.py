@@ -2,11 +2,10 @@ import pandas as pd
 from collections import defaultdict
 
 class Event:
-    def __init__(self, name, classification, date, time, attendance):
+    def __init__(self, name, classification, date, attendance):
         self.__name = name
         self.__classification = classification
         self.__date = date
-        self.__time = time
         self.__attendance = attendance
         
     @property
@@ -21,10 +20,6 @@ class Event:
     def date(self):
         return self.__date
 
-    @property
-    def time(self):
-        return self.__time
-    
     @property
     def attendance(self):
         return self.__attendance
@@ -96,28 +91,27 @@ def process_main_tracker(input_file):
     event_names = data_frame.columns[6:].str.strip().tolist()
     event_class = data_frame.iloc[0, 6:].str.strip().tolist()
     event_dates = data_frame.iloc[1, 6:].str.strip().tolist()
-    event_times = data_frame.iloc[2, 6:].str.strip().tolist()
     for index in range(len(event_names)):
-        event_attendance = data_frame.iloc[3:, (index + 6)].str.strip().tolist()
-        event_data.append(Event(event_names[index], event_class[index], event_dates[index], event_times[index], event_attendance))
+        event_attendance = data_frame.iloc[2:, (index + 6)].str.strip().tolist()
+        event_data.append(Event(event_names[index], event_class[index], event_dates[index], event_attendance))
     #print(event_data[1].attendance)
     #---------------------------------------------------------------
-    # Extracts data starting from the 3rd row (Where students start)
+    # Extracts data starting from the 2nd row (Where students start)
     student_data = []
-    student_first_name = data_frame.iloc[3:, 0].str.strip().tolist()
-    student_last_name = data_frame.iloc[3:, 1].str.strip().tolist()
-    student_class = data_frame.iloc[3:, 2].str.strip().tolist()
-    student_family = data_frame.iloc[3:, 3].str.strip().tolist()
+    student_first_name = data_frame.iloc[2:, 0].str.strip().tolist()
+    student_last_name = data_frame.iloc[2:, 1].str.strip().tolist()
+    student_class = data_frame.iloc[2:, 2].str.strip().tolist()
+    student_family = data_frame.iloc[2:, 3].str.strip().tolist()
     #---------------------------------------------------------------
     # Adds the events (Events attended by students from pre-existing csv)
     for index in range(len(student_first_name)):
         student_event_list = []
 
-        student_attendance = data_frame.iloc[(index + 3), 6:].str.strip().tolist()
+        student_attendance = data_frame.iloc[(index + 2), 6:].str.strip().tolist()
         for event_index in range(len(student_attendance)):
-            if student_attendance[event_index] == "1":
+            if student_attendance[event_index] != "0":
                 student_event_list.append(event_names[event_index])
-        
+        #print(student_event_list)
         student_data.append(Student(student_first_name[index], student_last_name[index], student_class[index], student_family[index], student_event_list))
     #---------------------------------------------------------------\
     # Returns the event data and student data
@@ -199,11 +193,11 @@ def add_names(student_data, event_data, new_first, new_last):
 
             for student in student_data:
                 if event_name in student.event_list:
-                    event_attendance.append("1")
+                    event_attendance.append(event_time)
                 else:
                     event_attendance.append("0")
             
-            event_data.append(Event(event_name, event_type, event_date, event_time, event_attendance))
+            event_data.append(Event(event_name, event_type, event_date, event_attendance))
 
 
             
@@ -339,6 +333,43 @@ def classification_getter():
 
     return(classification_list, family_list, event_list)
 
+def banquet_qual(student_data, event_data):
+    #---------------------------------------------------------------
+    # Checks to see if members can attend banquet
+    banquet_attendance_valid = []
+
+    #---------------------------------------------------------------
+    # Isolate General Meeting and Volunteer Events Only
+    event_class_dict = defaultdict()
+    for event in event_data:
+        if event.classification in ["General Meeting", "Volunteer"] and "." not in event.name:
+            event_class_dict[event.name] = event.classification
+
+    #---------------------------------------------------------------
+    # Checks how many unique volunteer events and general meeting a member has attended
+    for student in student_data:
+        volunteer = 0
+        general_meeting = 0
+        student_event_set = set(student.event_list)
+        for event in student_event_set:
+            if event in event_class_dict.keys():
+                if event_class_dict[event] == "General Meeting":
+                    general_meeting += 1
+                elif event_class_dict[event] == "Volunteer":
+                    volunteer += 1
+        
+        #---------------------------------------------------------------
+        # Adds to the validation list to be added to the main Data frame
+        
+        if volunteer >= 2 and general_meeting >= 1:
+            banquet_attendance_valid.append("Yes")
+
+        else:
+            banquet_attendance_valid.append("No")
+            
+    return banquet_attendance_valid
+
+
 def hour_counter(member_class, valid_family, event_class, student_data, event_data):
     #---------------------------------------------------------------
     # Valid Members
@@ -348,29 +379,25 @@ def hour_counter(member_class, valid_family, event_class, student_data, event_da
             valid_members.append(student)
     #---------------------------------------------------------------
     # Valid Events
-    valid_event_dict = defaultdict()
-    valid_event = []
+    valid_event = defaultdict()
     for event in event_data:
         if event.classification in event_class:
-            valid_event.append(event)
-    
-    for event in valid_event:
-        valid_event_dict[event.name] = float(event.time)
+            valid_event[event.name] = event
     #---------------------------------------------------------------
     # Count total hours
     member_time = defaultdict(int)
-    for member in valid_members:
+    for index, member in enumerate(valid_members):
         member_time[f"{member.first_name} {member.last_name}"] = 0
         for event in member.event_list:
-            if event in valid_event_dict.keys():
-                member_time[f"{member.first_name} {member.last_name}"] += valid_event_dict[event]
+            if event in valid_event.keys():
+                member_time[f"{member.first_name} {member.last_name}"] += float(valid_event[event].attendance[index])
     
     return member_time
-                
+
 def saver(student_data, event_data):
     #---------------------------------------------------------------
-    # First Column
-    first_col = ["","",""]
+    # First Column (First Name)
+    first_col = ["",""]
     for student in student_data:
         first_col.append(student.first_name)
 
@@ -378,38 +405,32 @@ def saver(student_data, event_data):
     new_dataframe = pd.DataFrame({"First Name": first_col})
 
     #---------------------------------------------------------------
-    # Second Column
-    second_col = ["","",""]
+    # Second Column (Last Name)
+    second_col = ["",""]
     for student in student_data:
         second_col.append(student.last_name)
 
     new_dataframe["Last Name"] = second_col
 
     #---------------------------------------------------------------
-    # Second Column
-    second_col = ["","",""]
-    for student in student_data:
-        second_col.append(student.last_name)
-
-    new_dataframe["Last Name"] = second_col
-    #---------------------------------------------------------------
-    # Third Column
-    third_col = ["","",""]
+    # Third Column (Classification)
+    third_col = ["",""]
     for student in student_data:
         third_col.append(student.classification)
 
     new_dataframe["Class"] = third_col
+
     #---------------------------------------------------------------
-    # Fourth Column
-    fourth_col = ["","",""]
+    # Fourth Column (Family)
+    fourth_col = ["",""]
     for student in student_data:
         fourth_col.append(student.family)
 
     new_dataframe["Family"] = fourth_col
 
     #---------------------------------------------------------------
-    # Fifth Column
-    fifth_col = ["","",""]
+    # Fifth Column (Total)
+    fifth_col = ["",""]
     total_hours = hour_counter(
         ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
         ["General Meeting", "Officer Meeting", "Tabling", "Volunteer", "Social", "Retreat"], 
@@ -419,8 +440,8 @@ def saver(student_data, event_data):
     new_dataframe["Total Hours"] = fifth_col
 
     #---------------------------------------------------------------
-    # Sixth Column
-    sixth_col = ["","",""]
+    # Sixth Column (Volunteer)
+    sixth_col = ["",""]
     volunteer_hours = hour_counter(
         ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
         ["Volunteer"], 
@@ -430,8 +451,8 @@ def saver(student_data, event_data):
     new_dataframe["Volunteer Hours"] = sixth_col
 
     #---------------------------------------------------------------
-    # Seventh Column
-    seventh_col = ["","",""]
+    # Seventh Column (General Meeting)
+    seventh_col = ["",""]
     general_hours = hour_counter(
         ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
         ["General Meeting"], 
@@ -439,12 +460,44 @@ def saver(student_data, event_data):
     )
     seventh_col.extend(general_hours.values())
     new_dataframe["General Meeting"] = seventh_col
+
     #---------------------------------------------------------------
-    # Eighth Column
+    # Eighth Column (Tabling)
+    eighth_col = ["",""]
+    tabling_hours = hour_counter(
+        ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
+        ["Tabling"], 
+        student_data, event_data
+    )
+    eighth_col.extend(tabling_hours.values())
+    new_dataframe["Tabling"] = eighth_col
 
-    
+    #---------------------------------------------------------------
+    # Ninth Column (Social)
+    ninth_col = ["",""]
+    social_hours = hour_counter(
+        ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
+        ["Social"], 
+        student_data, event_data
+    )
+    ninth_col.extend(social_hours.values())
+    new_dataframe["Social"] = ninth_col
 
+    #---------------------------------------------------------------
+    # Tenth Column (Banquet Validation)
+    tenth_col = ["",""]
+    banquet_valid = banquet_qual(student_data, event_data)
+    tenth_col.extend(banquet_valid)
+    new_dataframe["Banquet"] = tenth_col
 
+    #---------------------------------------------------------------
+    # All Events
+    for event in event_data:
+        event_col = [event.classification, event.date]
+        event_col.extend(event.attendance)
+        new_dataframe[event.name] = event_col
+
+    new_dataframe.to_csv('temp_tracker.csv', index=False)  
 
     print(new_dataframe)
 
