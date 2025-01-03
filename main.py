@@ -100,14 +100,14 @@ def process_main_tracker(input_file):
     for index in range(len(event_names)):
         event_attendance = data_frame.iloc[3:, (index + 6)].str.strip().tolist()
         event_data.append(Event(event_names[index], event_class[index], event_dates[index], event_times[index], event_attendance))
-    print(event_data[1].attendance)
+    #print(event_data[1].attendance)
     #---------------------------------------------------------------
     # Extracts data starting from the 3rd row (Where students start)
     student_data = []
     student_first_name = data_frame.iloc[3:, 0].str.strip().tolist()
     student_last_name = data_frame.iloc[3:, 1].str.strip().tolist()
     student_class = data_frame.iloc[3:, 2].str.strip().tolist()
-    student_family = data_frame.iloc[3:, 5].str.strip().tolist()
+    student_family = data_frame.iloc[3:, 3].str.strip().tolist()
     #---------------------------------------------------------------
     # Adds the events (Events attended by students from pre-existing csv)
     for index in range(len(student_first_name)):
@@ -123,15 +123,48 @@ def process_main_tracker(input_file):
     # Returns the event data and student data
     return event_data, student_data
 
-def add_names(student_data, new_first, new_last):
+def add_names(student_data, event_data, new_first, new_last):
     def spacer():
         print("\n")
 
     #---------------------------------------------------------------
-    # Input Event Name
+    # Input Event Information
     event_name = input("What is the name of the event you are adding? ")
     spacer()
-    confirm = input(f'The event name you are about to add is "{event_name}"\nY ~ confirm | N ~ to return | E ~ to return to start: ')
+    event_time = input("How long was the event? (In Hours | 1, 1.5, 2): ")
+    spacer()
+    event_date = input("What is the date of the event? (01/02/2024) ~ Include backslashes)")
+
+    print("------------------------------------------------------------")
+    print("What is the event?")
+    print("General Meeting (Q)")
+    print("Officer Meeting (W)")
+    print("Tabling (E)")
+    print("Volunteer (R)")
+    print("Social (Y)")
+    print("Retreat (U)")
+    print("------------------------------------------------------------")
+    choice = input()
+
+    if choice.lower() == "q":
+        event_type = "General Meeting"
+    if choice.lower() == "w":
+        event_type = "Officer Meeting"
+    if choice.lower() == "e":
+        event_type = "Tabling"
+    if choice.lower() == "r":
+        event_type = "Volunteer"
+    if choice.lower() == "y":
+        event_type = "Social"
+    if choice.lower() == "u":
+        event_type = "Retreat"
+
+    spacer()
+    print(f'The event name is "{event_name}"')
+    print(f'The event type is a "{event_type}" event')
+    print(f'The event date is {event_date}')
+    print(f'The event length is "{event_time} hours')
+    confirm = input(f'Y ~ confirm | N ~ to return | E ~ to return to start: ')
     spacer()
     #---------------------------------------------------------------
     # Return to dashboard
@@ -151,7 +184,7 @@ def add_names(student_data, new_first, new_last):
                 new_last.remove(student_data[index].last_name)
                 student_data[index].event_list = event_name
         #---------------------------------------------------------------
-        # Confirm Addition of New names
+        # Confirm Addition of New names & Event
         print("Your going to add these new names to the list")
         for index in range(len(new_first)):
             print(f"{new_first[index]} {new_last[index]}")
@@ -161,6 +194,19 @@ def add_names(student_data, new_first, new_last):
         if confirm.lower() == "y":
             for index in range(len(new_first)):
                 student_data.append(Student(new_first[index], new_last[index], "None", "None", [event_name]))
+
+            event_attendance = []
+
+            for student in student_data:
+                if event_name in student.event_list:
+                    event_attendance.append("1")
+                else:
+                    event_attendance.append("0")
+            
+            event_data.append(Event(event_name, event_type, event_date, event_time, event_attendance))
+
+
+            
         #---------------------------------------------------------------
         # Restart, nothing saved
         if confirm.lower() == "n":
@@ -314,12 +360,96 @@ def hour_counter(member_class, valid_family, event_class, student_data, event_da
     # Count total hours
     member_time = defaultdict(int)
     for member in valid_members:
+        member_time[f"{member.first_name} {member.last_name}"] = 0
         for event in member.event_list:
             if event in valid_event_dict.keys():
                 member_time[f"{member.first_name} {member.last_name}"] += valid_event_dict[event]
     
-    print(member_time)
+    return member_time
                 
+def saver(student_data, event_data):
+    #---------------------------------------------------------------
+    # First Column
+    first_col = ["","",""]
+    for student in student_data:
+        first_col.append(student.first_name)
+
+    # Create the DataFrame with a column name
+    new_dataframe = pd.DataFrame({"First Name": first_col})
+
+    #---------------------------------------------------------------
+    # Second Column
+    second_col = ["","",""]
+    for student in student_data:
+        second_col.append(student.last_name)
+
+    new_dataframe["Last Name"] = second_col
+
+    #---------------------------------------------------------------
+    # Second Column
+    second_col = ["","",""]
+    for student in student_data:
+        second_col.append(student.last_name)
+
+    new_dataframe["Last Name"] = second_col
+    #---------------------------------------------------------------
+    # Third Column
+    third_col = ["","",""]
+    for student in student_data:
+        third_col.append(student.classification)
+
+    new_dataframe["Class"] = third_col
+    #---------------------------------------------------------------
+    # Fourth Column
+    fourth_col = ["","",""]
+    for student in student_data:
+        fourth_col.append(student.family)
+
+    new_dataframe["Family"] = fourth_col
+
+    #---------------------------------------------------------------
+    # Fifth Column
+    fifth_col = ["","",""]
+    total_hours = hour_counter(
+        ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
+        ["General Meeting", "Officer Meeting", "Tabling", "Volunteer", "Social", "Retreat"], 
+        student_data, event_data
+    )
+    fifth_col.extend(total_hours.values())
+    new_dataframe["Total Hours"] = fifth_col
+
+    #---------------------------------------------------------------
+    # Sixth Column
+    sixth_col = ["","",""]
+    volunteer_hours = hour_counter(
+        ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
+        ["Volunteer"], 
+        student_data, event_data
+    )
+    sixth_col.extend(volunteer_hours.values())
+    new_dataframe["Volunteer Hours"] = sixth_col
+
+    #---------------------------------------------------------------
+    # Seventh Column
+    seventh_col = ["","",""]
+    general_hours = hour_counter(
+        ["Officer", "Junior Officer", "Big Sib", "Member"], ["Brown", "Sally", "Moon", "Boss"], 
+        ["General Meeting"], 
+        student_data, event_data
+    )
+    seventh_col.extend(general_hours.values())
+    new_dataframe["General Meeting"] = seventh_col
+    #---------------------------------------------------------------
+    # Eighth Column
+
+    
+
+
+
+    print(new_dataframe)
+
+    
+
 
 def main():
     def spacer():
@@ -340,27 +470,22 @@ def main():
     print("Welcome to the Tzu Chi Hour Tracker")
     print("To add an event (E)")
     print("Hour Counter (H)")
+    print("Run the Saver (S)")
     print("------------------------------------------------------------")
     
+
+
     decision = input()
 
     if decision.lower() == "e":
-        add_names(student_data, new_first_names, new_last_names)
+        add_names(student_data, event_data, new_first_names, new_last_names)
     
     if decision.lower() == "h":
         classification_list, family_list, event_list = classification_getter()
         hour_counter(classification_list, family_list, event_list, student_data, event_data)
 
-
-
-
-
-
-
-    
-
-
-
+    if decision.lower() == "s":
+        saver(student_data, event_data)        
 
 
 main()
