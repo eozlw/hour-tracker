@@ -1,6 +1,6 @@
-﻿First Name,Last Name,Class,Family,Total hours,Volunteer Hours,Overton,Event2,Overton,Event4,Event5,Event6
-,,,,,,Volunteer,Social,Volunteer,General Meeting,Tabling,Volunteer
-,,,,,,1/24/2024,2/12/2024,3/20/2024,4/10/2024,5/20/2024,5/21/2024
-Aden,Le,Officer,Brown,2,2,2,0,3,3,2,0
-Zoe,Walker,Officer,Boss,3,0,0,3,0,0,4,1
-Bill ,Geng,Officer,Moon,5,2,2,0,0,3,0,1
+First Name,Last Name,Class,Family,Total Hours,Volunteer Hours,General Meeting,Tabling,Social,Banquet,Overton,Event2,Overton.1,Event4,Event5,Event6,West
+,,,,,,,,,,Volunteer,Social,Volunteer,General Meeting,Tabling,Volunteer,Volunteer
+,,,,,,,,,,1/24/2024,2/12/2024,3/20/2024,4/10/2024,5/20/2024,5/21/2024,4
+Aden,Le,Officer,Brown,13.0,8.0,3.0,2.0,0,Yes,2,0,3,3,2,0,3
+Zoe,Walker,Officer,Boss,8.0,1.0,0,4.0,3.0,No,0,3,0,0,4,1,0
+Bill,Geng,Officer,Moon,9.0,6.0,3.0,0,0,Yes,2,0,0,3,0,1,3
