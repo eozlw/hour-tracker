@@ -64,22 +64,18 @@ class Student:
 def import_names(input_file):
     #---------------------------------------------------------------
     # Load the CSV file
-    input_data_frame = pd.read_csv(input_file, header=None)
-
+    input_data_frame = pd.read_csv(input_file, header=None, names=["First_name", "Last_name"])
     #---------------------------------------------------------------
-
-    # Split the first column by space
-    names_df = input_data_frame[0].str.split(' ', expand=True)
-    names_df.columns = ["First_name", "Last_name"]
-
+    # Strip any whitespace around the names
+    input_data_frame["First_name"] = input_data_frame["First_name"].str.strip()
+    input_data_frame["Last_name"] = input_data_frame["Last_name"].str.strip()
     #---------------------------------------------------------------
-    # Capitalizes the first letter of each column
-    names_df["First_name"] = names_df["First_name"].str.capitalize()
-    names_df["Last_name"] = names_df["Last_name"].str.capitalize()
-
+    # Capitalize the first letter of each name
+    input_data_frame["First_name"] = input_data_frame["First_name"].str.capitalize()
+    input_data_frame["Last_name"] = input_data_frame["Last_name"].str.capitalize()
     #---------------------------------------------------------------
-    # Returns the new names data frame
-    return names_df
+    # Return the new names DataFrame
+    return input_data_frame
 
 def process_main_tracker(input_file):
     #---------------------------------------------------------------
@@ -215,9 +211,12 @@ def add_names(student_data, event_data, new_first, new_last):
 
 
             #---------------------------------------------------------------
-            # Addition of New names & Event     
+            # Addition of New names & Event  
+            number = len(student_data) - 1
+
             for index in range(len(new_first)):
-                student_data.append(Student(new_first[index], new_last[index], "Member", "NoFam", [event_name]))
+                number += 1
+                student_data.append(Student(new_first[index], new_last[index], "Member", "NoFam", [event_name], number))
 
             event_attendance = []
 
@@ -479,7 +478,6 @@ def saver(student_data, event_data, savefile):
         student_data, event_data
     )
     fifth_col.extend(total_hours.values())
-    print(fifth_col)
     new_dataframe["Total Hours"] = fifth_col
 
     #---------------------------------------------------------------
