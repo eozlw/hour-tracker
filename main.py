@@ -177,15 +177,36 @@ def add_names(student_data, event_data, new_first, new_last):
         print("Please re-enter the event name")
         add_names(student_data, new_first, new_last)
     #---------------------------------------------------------------
-    # Confirm Add New Event
     elif confirm.lower() == "y":
-        for index in range(len(student_data)):
-            if student_data[index].first_name in new_first and student_data[index].last_name in new_last:
-                new_first.remove(student_data[index].first_name)
-                new_last.remove(student_data[index].last_name)
-                student_data[index].event_list = event_name
+        # Ensure new_first and new_last have the same length
+        if len(new_first) != len(new_last):
+            print("Error: First and last name lists must be of the same length.")
+            return
+
+        # Create a set of (first_name, last_name) tuples for faster lookup
+        new_students = set(zip(new_first, new_last))
+
+        # Iterate through student_data to find matches
+        matched_students = set()  # Track matched (first_name, last_name) pairs
+        for student in student_data:
+            student_name = (student.first_name, student.last_name)
+            if student_name in new_students:
+                # Add the event to the student's event list
+                student.event_list = event_name
+                matched_students.add(student_name)
+
+        # Remove matched students from new_first and new_last
+        for first, last in matched_students:
+            try:
+                index = new_first.index(first)
+                if new_last[index] == last:
+                    del new_first[index]
+                    del new_last[index]
+            except ValueError:
+                continue  # Skip if the name is already removed
         #---------------------------------------------------------------
         # Confirm Addition of New names & Event
+
         print("Your going to add these new names to the list")
         for index in range(len(new_first)):
             print(f"{new_first[index]} {new_last[index]}")
@@ -478,6 +499,7 @@ def saver(student_data, event_data, savefile):
         student_data, event_data
     )
     fifth_col.extend(total_hours.values())
+    print(len(fifth_col))
     new_dataframe["Total Hours"] = fifth_col
 
     #---------------------------------------------------------------
@@ -610,9 +632,11 @@ def main():
     new_names_df = import_names("names.csv")
     new_first_names = new_names_df.iloc[0:, 0].str.strip().tolist()
     new_last_names = new_names_df.iloc[0:, 1].str.strip().tolist()
+    print(len(new_first_names))
+    print(len(new_last_names))
     #---------------------------------------------------------------
     # Import the event and student data from the pre-existing data tracker
-    event_data, student_data = process_main_tracker('blank.csv')
+    event_data, student_data = process_main_tracker('new.csv')
     #---------------------------------------------------------------
     # Create Dashboard
     spacer()
@@ -630,7 +654,7 @@ def main():
     
     if decision.lower() == "q":
         spacer()
-        print(pd.read_csv('blank.csv'))
+        print(pd.read_csv('new.csv'))
         spacer()
         print("Press Enter When Done Viewing")
         input()
@@ -640,7 +664,7 @@ def main():
 
     if decision.lower() == "w":
         student_data, event_data = add_names(student_data, event_data, new_first_names, new_last_names)
-        saver(student_data, event_data, 'blank.csv')
+        saver(student_data, event_data, 'new.csv')
         pageclear()
         print("Save Occured")
         main()
@@ -692,9 +716,9 @@ def main():
         main()
     
     if decision.lower() == "s":
+        saver(student_data, event_data, 'new.csv')
         pageclear()
         print("Have a good day!")
-        saver(student_data, event_data,'blank.csv')
 
 
 main()
