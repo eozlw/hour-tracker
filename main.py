@@ -636,7 +636,7 @@ def main():
     print(len(new_last_names))
     #---------------------------------------------------------------
     # Import the event and student data from the pre-existing data tracker
-    event_data, student_data = process_main_tracker('new.csv')
+    event_data, student_data = process_main_tracker('tcca_ht.csv')
     #---------------------------------------------------------------
     # Create Dashboard
     spacer()
@@ -654,7 +654,7 @@ def main():
     
     if decision.lower() == "q":
         spacer()
-        print(pd.read_csv('new.csv'))
+        print(pd.read_csv('tcca_ht.csv'))
         spacer()
         print("Press Enter When Done Viewing")
         input()
@@ -664,7 +664,7 @@ def main():
 
     if decision.lower() == "w":
         student_data, event_data = add_names(student_data, event_data, new_first_names, new_last_names)
-        saver(student_data, event_data, 'new.csv')
+        saver(student_data, event_data, 'tcca_ht.csv')
         pageclear()
         print("Save Occured")
         main()
@@ -716,7 +716,7 @@ def main():
         main()
     
     if decision.lower() == "s":
-        saver(student_data, event_data, 'new.csv')
+        saver(student_data, event_data, 'tcca_ht.csv')
         pageclear()
         print("Have a good day!")
 
